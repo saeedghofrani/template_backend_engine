@@ -1,5 +1,5 @@
 module.exports =  ControllerTemplate = (LowerName, UpperName) => {
-  return const baseString = `
+  return `
   @Entity({ schema: 'public', name: '${LowerName}' })
 export class ${UpperName}Entity extends BasicEnt {
 

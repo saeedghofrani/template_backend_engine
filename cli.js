@@ -5,24 +5,45 @@ async function createDirectory(path) {
     try {
         return await fs.promises.mkdir(path, {recursive: true});
     } catch (e) {
-        console.log(e)
+        throw e
     }
 }
 
 async function createFile(path, name, data = '//created by ESTER') {
     try {
-        return fs.promises.writeFile(`${path}/${name}`, data)
+        return fs.promises.writeFile(`${path}/${name}`, data, {flag: 'wx'})
     } catch (e) {
-        console.log(e)
+        throw e
     }
 }
 
 function readConsole() {
-    return Object.values(process.argv).slice(2).join(' ').toString();
+    const args = process.argv.slice(2);
+    if (args.length !== 1) {
+        throw new Error('Usage: node cli.js <moduleName>');
+    }
+    const moduleName = args[0];
+    if (!/^[a-z][A-Za-z0-9]*$/.test(moduleName)) {
+        throw new Error('Module name must be a safe TypeScript identifier beginning with a lowercase letter');
+    }
+    return moduleName;
+}
+
+async function pathExists(path) {
+    try {
+        await fs.promises.access(path);
+        return true;
+    } catch (error) {
+        if (error.code === 'ENOENT') return false;
+        throw error;
+    }
 }
 
 async function createStructuredFile(path) {
     try {
+        if (await pathExists(path)) {
+            throw new Error(`Refusing to overwrite existing path: ${path}`);
+        }
         await createDirectory(path);
 
         await createDirectory(`${path}/core`);
@@ -70,7 +91,7 @@ async function createStructuredFile(path) {
         await createFile(`${path}/module/${path}/repository`, `${path}.repository.ts`);
 
     } catch (e) {
-        console.log(e)
+        throw e
     }
 }
 
@@ -78,4 +99,7 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-createStructuredFile(readConsole());
+createStructuredFile(readConsole()).catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+});
